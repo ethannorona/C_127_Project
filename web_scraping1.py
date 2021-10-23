@@ -1,33 +1,35 @@
-from selenium import webdriver
-from bs4 import BeautifulSoup
-import time
-import csv
+from bs4 import BeautifulSoup as bs
+import requests
+import pandas as pd
 
-START_URL = "https://en.wikipedia.org/wiki/List_of_brightest_stars_and_other_record_stars"
-browser = webdriver.Chrome("C://Users/ethan/OneDrive/Desktop/WH Jr. Projects/Python Programming/C 127 Project/chromedriver.exe")
-browser.get(START_URL)
-time.sleep(10)
+bright_starts_url = "https://en.wikipedia.org/wiki/List_of_brightest_stars_and_other_record_stars"
+page = requests.get(bright_starts_url)
+print(page)
 
-def scrape():
-    headers = ["Name", "Distance", "Mass", "Radius"]
-    star_data = []
-    soup = BeautifulSoup(browser.page_source, "html.passer")
-    for tr_tag in soup.find_all("tr"):
-        td_tags = tr_tag.find_all("td")
-        temp_list = []
-        for index, td_tag in enumerate(td_tags):
-            if index == 0:
-                temp_list.append(td_tag.find_all("a")[0].contents[0])
-            else:
-                try:
-                    temp_list.append(td_tag.contents[0])
-                except:
-                    temp_list.append("")
-            star_data.append(temp_list)
-        browser.find_element_by_xpath('//*[@id="mw-normal-catlinks"]/ul/li[1]/a').click
-    with open("scraper_2.csv", "w") as f:
-        csvwriter = csv.writer(f)
-        csvwriter.writerow(headers)
-        csvwriter.writerows(star_data)
+soup = bs(page.text, 'html.parser')
+star_table = soup.find('table')
 
-scrape()
+temp_list = []
+table_rows = star_table.find_all('tr')
+for tr in table_rows:
+    td = tr.find_all('td')
+    row = [i.text.rstrip() for i in td]
+    temp_list.append(row)
+    
+Names = []
+Distance = []
+Mass = []
+Radius = []
+Luminosity = []
+
+for i in range(1, len(temp_list)):
+    Names.append(temp_list[i][1])
+    Distance.append(temp_list[i][3])
+    Mass.append(temp_list[i][5])
+    Radius.append(temp_list[i][6])
+    Luminosity.append(temp_list[i][7])
+    
+dataframe2 = pd.DataFrame(list(zip(Names, Distance, Mass, Radius, Luminosity)), colums = ['Name', 'Distance', 'Mass', 'Radius', 'Luminosity'])
+print(dataframe2)
+
+dataframe2.to_csv('bright_starts.csv')
